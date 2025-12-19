@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express'
-import indexRouter from './routes/indexRouter'
-import userRouter from './routes/userRouter'
-import messagesRouter from './routes/messagesRouter'
+import indexRouter from './routes/indexRouter.js'
+import userRouter from './routes/userRouter.js'
+import messagesRouter from './routes/messagesRouter.js'
 
 const app = express()
 
