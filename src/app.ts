@@ -1,9 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express'
+// Need to import cors to work with frontend
 import indexRouter from './routes/indexRouter.js'
 import userRouter from './routes/userRouter.js'
 import messagesRouter from './routes/messagesRouter.js'
 
 const app = express()
+
+// app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 app.use('/index', indexRouter)
 app.use('/user', userRouter)
