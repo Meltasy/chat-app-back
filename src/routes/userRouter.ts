@@ -1,19 +1,11 @@
-import { Router, Request, Response } from 'express'
+import { Router } from 'express'
+import { getUser, getChats } from '../controllers/userController.js'
+// Need to set up authentication
+import { authenticate } from '../'
 
 const userRouter = Router()
 
-userRouter.get('/me', (req: Request, res: Response) => {
-  res.send('Current user home')
-})
-
-userRouter.get('/:userId', (req: Request, res: Response) => {
-  const { userId } = req.params
-  res.send(`User ID: ${userId} Profile`)
-})
-
-userRouter.get('/:userId/messages', (req: Request, res: Response) => {
-  const { userId } = req.params
-  res.send(`User ID: ${userId} Messages`)
-})
+userRouter.get('/:id', getUser)
+userRouter.get('/:id/chats', authenticate, getChats)
 
 export default userRouter
