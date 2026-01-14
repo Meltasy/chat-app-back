@@ -34,6 +34,12 @@ async function getUser(req: Request, res: Response) {
 
 async function getChats(req: Request, res: Response) {
   try {
+    if (!req.user || typeof req.user === 'string') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
+    }
     if (req.user!.id !== req.params.id) {
       return res.status(403).json({
         success: false,
@@ -75,13 +81,6 @@ async function getChats(req: Request, res: Response) {
         lastMessageAt: 'desc'
       }
     })
-    // Do I need this check?
-    // if (chats.length === 0) {
-    //   return res.json({
-    //     success: true,
-    //     chats: []
-    //   })
-    // }
     return res.json({
       success: true,
       message: 'Chats now showing.',

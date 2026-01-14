@@ -1,6 +1,7 @@
 import { prisma } from '../prisma.js'
 import bcrypt from 'bcryptjs'
-import type { Request, Response } from 'express' 
+import jwt from 'jsonwebtoken'
+import type { Request, Response } from 'express'
 
 async function register(req: Request, res: Response) {
   try {
@@ -30,12 +31,21 @@ async function register(req: Request, res: Response) {
       }
     })
     console.log('Created user:', user)
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('JWT_SECRET is not defined.')
+    }
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      secret,
+      { expiresIn: '24h' }
+    )
+    console.log('Created token:', token)
     return res.json({
       success: true,
       message: 'User registered correctly.',
-      userId: user.id,
-      username: user.username,
-      email: user.email
+      token,
+      user: { userId: user.id, username: user.username, email: user.email }
     })
   } catch (error) {
     console.error('Registration error:', error)
@@ -56,7 +66,7 @@ async function login(req: Request, res: Response) {
       }
     })
     if (!user) {
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: 'Email doesn\'t exist.'
       })
@@ -69,12 +79,21 @@ async function login(req: Request, res: Response) {
       })
     }
     console.log('Logged in user:', user)
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('JWT_SECRET is not defined.')
+    }
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      secret,
+      { expiresIn: '24h' }
+    )
+    console.log('Created token:', token)
     return res.json({
       success: true,
       message: 'User now logged in.',
-      userId: user.id,
-      username: user.username,
-      email: user.email
+      token,
+      user: { userId: user.id, username: user.username, email: user.email }
     })
   } catch (error) {
     console.error('Error logging in:', error)

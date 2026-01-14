@@ -1,7 +1,6 @@
 import { Router } from 'express'
 import { getUser, getChats } from '../controllers/userController.js'
-// Need to set up authentication
-import { authenticate } from '../'
+import { authenticate } from '../authentication/jwtAuthenticate.js'
 
 const userRouter = Router()
 
