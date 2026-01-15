@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import indexRouter from './routes/indexRouter.js'
 import userRouter from './routes/userRouter.js'
-import messagesRouter from './routes/messagesRouter.js'
+import chatsRouter from './routes/chatsRouter.js'
 
 const app = express()
 
@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/index', indexRouter)
 app.use('/user', userRouter)
-app.use('/messages', messagesRouter)
+app.use('/messages', chatsRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('The backend is up and running.')

@@ -5,7 +5,6 @@ import type { Request, Response } from 'express'
 
 async function register(req: Request, res: Response) {
   try {
-    console.log('User data:', req.body)
     const { username, email, password } = req.body
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -30,7 +29,6 @@ async function register(req: Request, res: Response) {
         password: hashPword
       }
     })
-    console.log('Created user:', user)
     const secret = process.env.JWT_SECRET
     if (!secret) {
       throw new Error('JWT_SECRET is not defined.')
@@ -40,7 +38,6 @@ async function register(req: Request, res: Response) {
       secret,
       { expiresIn: '24h' }
     )
-    console.log('Created token:', token)
     return res.json({
       success: true,
       message: 'User registered correctly.',
@@ -58,7 +55,6 @@ async function register(req: Request, res: Response) {
 
 async function login(req: Request, res: Response) {
   try {
-    console.log('User data:', req.body)
     const { email, password } = req.body
     const user = await prisma.user.findUnique({
       where: {
@@ -78,7 +74,6 @@ async function login(req: Request, res: Response) {
         message: 'The password is incorrect.'
       })
     }
-    console.log('Logged in user:', user)
     const secret = process.env.JWT_SECRET
     if (!secret) {
       throw new Error('JWT_SECRET is not defined.')
@@ -88,7 +83,6 @@ async function login(req: Request, res: Response) {
       secret,
       { expiresIn: '24h' }
     )
-    console.log('Created token:', token)
     return res.json({
       success: true,
       message: 'User now logged in.',

@@ -1,9 +1,8 @@
 import { prisma } from '../prisma.js'
-import type { Request, Response } from 'express' 
+import type { Request, Response } from 'express'
 
 async function getUser(req: Request, res: Response) {
   try {
-    console.log('id:', req.params.id)
     const user = await prisma.user.findUnique({
       where: {
         id: req.params.id
@@ -74,7 +73,8 @@ async function getChats(req: Request, res: Response) {
           orderBy: {
             sentAt: 'desc'
           },
-          take: 1
+          // This takes only single most recent message for each chat - as a preview
+          // take: 1
         }
       },
       orderBy: {

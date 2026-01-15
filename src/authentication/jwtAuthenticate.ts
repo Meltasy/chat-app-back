@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { Request, Response, NextFunction } from "express"
+import { Request, Response, NextFunction } from 'express'
 
 const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
