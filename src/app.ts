@@ -1,3 +1,5 @@
+// Add testing using SuperTest: https://www.theodinproject.com/lessons/nodejs-testing-routes-and-controllers
+
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import indexRouter from './routes/indexRouter.js'
@@ -12,7 +14,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/index', indexRouter)
 app.use('/user', userRouter)
-app.use('/messages', chatsRouter)
+app.use('/chats', chatsRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('The backend is up and running.')

@@ -3,7 +3,18 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { Request, Response } from 'express'
 
-async function register(req: Request, res: Response) {
+interface RegisterBody {
+  username: string
+  email: string
+  password: string
+}
+
+interface LoginBody {
+  email: string
+  password: string
+}
+
+async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
   try {
     const { username, email, password } = req.body
     const existingUser = await prisma.user.findFirst({
@@ -53,7 +64,7 @@ async function register(req: Request, res: Response) {
   }
 }
 
-async function login(req: Request, res: Response) {
+async function login(req: Request<{}, {}, LoginBody>, res: Response) {
   try {
     const { email, password } = req.body
     const user = await prisma.user.findUnique({
@@ -91,7 +102,7 @@ async function login(req: Request, res: Response) {
     })
   } catch (error) {
     console.error('Error logging in:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'User login failed.'
     })

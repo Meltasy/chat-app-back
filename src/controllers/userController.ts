@@ -1,7 +1,11 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
 
-async function getUser(req: Request, res: Response) {
+interface UserParams {
+  id: string
+}
+
+async function getUser(req: Request<UserParams>, res: Response) {
   try {
     const user = await prisma.user.findUnique({
       where: {
@@ -24,22 +28,22 @@ async function getUser(req: Request, res: Response) {
     })
   } catch (error) {
     console.error('Error finding user:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error occurred.'
     })
   }
 }
 
-async function getChats(req: Request, res: Response) {
+async function getChats(req: Request<UserParams>, res: Response) {
   try {
-    if (!req.user || typeof req.user === 'string') {
+    if (!req.user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token payload.'
       })
     }
-    if (req.user!.id !== req.params.id) {
+    if (req.user.id !== req.params.id) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view these chats.'
@@ -88,7 +92,7 @@ async function getChats(req: Request, res: Response) {
     })
   } catch (error) {
     console.error('Error finding chats:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error occurred.'
     })
