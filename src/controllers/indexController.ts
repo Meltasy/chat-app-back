@@ -2,6 +2,7 @@ import { prisma } from '../prisma.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { Request, Response } from 'express'
+import { validationResult } from 'express-validator'
 
 interface RegisterBody {
   username: string
@@ -15,6 +16,13 @@ interface LoginBody {
 }
 
 async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: errors.array().map(e => e.msg).join(', ')
+    })
+  }
   try {
     const { username, email, password } = req.body
     const existingUser = await prisma.user.findFirst({
@@ -65,6 +73,13 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
 }
 
 async function login(req: Request<{}, {}, LoginBody>, res: Response) {
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: errors.array().map(e => e.msg).join(', ')
+    })
+  }
   try {
     const { email, password } = req.body
     const user = await prisma.user.findUnique({
@@ -73,16 +88,16 @@ async function login(req: Request<{}, {}, LoginBody>, res: Response) {
       }
     })
     if (!user) {
-      return res.status(404).json({
+      return res.status(401).json({
         success: false,
-        message: 'Email doesn\'t exist.'
+        message: 'Invalid email or password.'
       })
     }
     const match = await bcrypt.compare(password, user.password)
     if (!match) {
       return res.status(401).json({
         success: false,
-        message: 'The password is incorrect.'
+        message: 'Invalid email or password.'
       })
     }
     const secret = process.env.JWT_SECRET

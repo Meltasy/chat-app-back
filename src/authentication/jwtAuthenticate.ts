@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { Request, Response, NextFunction } from 'express'
+import { CustomJwtPayload } from '../types/express.js'
 
 const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
@@ -15,7 +16,7 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
     if (!secret) {
       throw new Error('JWT_SECRET is not defined.')
     }
-    const decoded = jwt.verify(token, secret)
+    const decoded = jwt.verify(token, secret) as CustomJwtPayload
     req.user = decoded
     next()
   } catch (err) {

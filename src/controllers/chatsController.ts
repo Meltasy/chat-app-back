@@ -1,5 +1,6 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
+import { validationResult } from 'express-validator'
 
 interface CreateChatBody {
   name: string
@@ -11,6 +12,13 @@ interface SendMessageBody {
 }
 
 async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: errors.array().map(e => e.msg).join(', ')
+    })
+  }
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -63,7 +71,8 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
 
 async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
   try {
-    if (!req.user) {
+    const user = req.user
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token payload.'
@@ -107,7 +116,7 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
         message: 'Chat not found.'
       })
     }
-    const isMember = chat.members.some(member => member.id === req.user.id)
+    const isMember = chat.members.some(member => member.id === user.id)
     if (!isMember) {
         return res.status(403).json({
         success: false,
@@ -130,8 +139,16 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
 }
 
 async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBody>, res: Response) {
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: errors.array().map(e => e.msg).join(', ')
+    })
+  }
   try {
-    if (!req.user) {
+    const user = req.user
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token payload.'
@@ -162,7 +179,7 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
         message: 'Chat not found.'
       })
     }
-    const isMember = chat.members.some(member => member.id === req.user.id)
+    const isMember = chat.members.some(member => member.id === user.id)
     if (!isMember) {
         return res.status(403).json({
         success: false,
@@ -172,7 +189,7 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
     await prisma.message.create({
       data: {
         text: req.body.text,
-        senderId: req.user.id,
+        senderId: user.id,
         chatId: req.params.chatId
       }
     })
