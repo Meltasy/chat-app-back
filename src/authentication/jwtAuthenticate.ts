@@ -1,23 +1,26 @@
 import jwt from 'jsonwebtoken'
 import { Request, Response, NextFunction } from 'express'
+import { JWT_SECRET } from '../config/env.js'
 import { CustomJwtPayload } from '../types/express.js'
 
-const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+const authenticate = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
-  if (!authHeader) {
+  if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing authorization header.' })
   }
-  const token = authHeader.split(' ')[1]
-  if (!token) {
-    return res.status(401).json({ error: 'Missing token.' })
-  }
+  const token = authHeader.slice(7)
   try {
-    const secret = process.env.JWT_SECRET
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined.')
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (
+      typeof decoded !== 'object' ||
+      decoded === null ||
+      !('id' in decoded) ||
+      !('username' in decoded) ||
+      !('email' in decoded)
+    ) {
+      return res.status(403).json({ error : 'Invalide token payload.'})
     }
-    const decoded = jwt.verify(token, secret) as CustomJwtPayload
-    req.user = decoded
+    req.user = decoded as CustomJwtPayload
     next()
   } catch (err) {
     console.error('Invalid token:', err)

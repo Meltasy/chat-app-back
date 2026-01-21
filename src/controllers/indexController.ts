@@ -2,7 +2,7 @@ import { prisma } from '../prisma.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { Request, Response } from 'express'
-import { validationResult } from 'express-validator'
+import { JWT_SECRET } from '../config/env.js'
 
 interface RegisterBody {
   username: string
@@ -16,20 +16,15 @@ interface LoginBody {
 }
 
 async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
-  const errors = validationResult(req)
-  if(!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array().map(e => e.msg).join(', ')
-    })
-  }
   try {
-    const { username, email, password } = req.body
+    let { username, email, password } = req.body
+    username = username.toLowerCase()
+    email = email.toLowerCase()
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { username: username },
-          { email: email }
+          { username },
+          { email }
         ]
       }
     })
@@ -48,13 +43,9 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
         password: hashPword
       }
     })
-    const secret = process.env.JWT_SECRET
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined.')
-    }
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
-      secret,
+      JWT_SECRET,
       { expiresIn: '24h' }
     )
     return res.json({
@@ -73,19 +64,11 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
 }
 
 async function login(req: Request<{}, {}, LoginBody>, res: Response) {
-  const errors = validationResult(req)
-  if(!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array().map(e => e.msg).join(', ')
-    })
-  }
   try {
-    const { email, password } = req.body
+    let { email, password } = req.body
+    email = email.toLowerCase()
     const user = await prisma.user.findUnique({
-      where: {
-        email: email
-      }
+      where: { email }
     })
     if (!user) {
       return res.status(401).json({
@@ -100,13 +83,9 @@ async function login(req: Request<{}, {}, LoginBody>, res: Response) {
         message: 'Invalid email or password.'
       })
     }
-    const secret = process.env.JWT_SECRET
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined.')
-    }
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
-      secret,
+      JWT_SECRET,
       { expiresIn: '24h' }
     )
     return res.json({

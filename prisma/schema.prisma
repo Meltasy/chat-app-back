@@ -21,8 +21,12 @@ model Message {
   sentAt   DateTime @default(now())
   sender   User     @relation(fields: [senderId], references: [id])
   senderId String   @db.Uuid
-  chat     Chat     @relation(fields: [chatId], references: [id])
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   chatId   String   @db.Uuid
+
+  @@index([chatId])
+  @@index([chatId, sentAt])
+  @@index([senderId])
 }
 
 model Chat {
@@ -31,4 +35,6 @@ model Chat {
   messages      Message[]
   members       User[]
   lastMessageAt DateTime  @default(now())
+
+  @@index([lastMessageAt])
 }

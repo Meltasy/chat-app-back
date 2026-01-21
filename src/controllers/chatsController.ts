@@ -1,6 +1,5 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
-import { validationResult } from 'express-validator'
 
 interface CreateChatBody {
   name: string
@@ -12,13 +11,6 @@ interface SendMessageBody {
 }
 
 async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
-  const errors = validationResult(req)
-  if(!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array().map(e => e.msg).join(', ')
-    })
-  }
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -139,13 +131,6 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
 }
 
 async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBody>, res: Response) {
-  const errors = validationResult(req)
-  if(!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array().map(e => e.msg).join(', ')
-    })
-  }
   try {
     const user = req.user
     if (!user) {
@@ -155,12 +140,6 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
       })
     }
     console.log('message:', req.body.text)
-    if (req.body.text === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'Message cannot be empty.'
-      })
-    }
     const chat = await prisma.chat.findUnique({
       where: {
         id: req.params.chatId

@@ -5,6 +5,7 @@ import cors from 'cors'
 import indexRouter from './routes/indexRouter.js'
 import userRouter from './routes/userRouter.js'
 import chatsRouter from './routes/chatsRouter.js'
+import { PORT } from './config/env.js'
 
 const app = express()
 
@@ -38,8 +39,6 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
     message: 'Internal server error'
   })
 })
-
-const PORT = process.env.PORT || 3000
 
 app.listen(PORT, () => {
   console.log(`Message App listening on port ${PORT}`)
