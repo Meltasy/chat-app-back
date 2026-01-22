@@ -8,9 +8,7 @@ interface UserParams {
 async function getUser(req: Request<UserParams>, res: Response) {
   try {
     const user = await prisma.user.findUnique({
-      where: {
-        id: req.params.id
-      },
+      where: { id: req.params.id },
       select: {
         id: true,
         username: true
@@ -27,7 +25,6 @@ async function getUser(req: Request<UserParams>, res: Response) {
       user
     })
   } catch (error) {
-    console.error('Error finding user:', error)
     return res.status(500).json({
       success: false,
       message: 'Server error occurred.'
@@ -52,46 +49,43 @@ async function getChats(req: Request<UserParams>, res: Response) {
     const chats = await prisma.chat.findMany({
       where: {
         members: {
-          some: {
-            id: req.params.id
-          }
+          some: { userId: req.params.id }
         }
       },
       include: {
         members: {
           select: {
-            id: true,
-            username: true
+            role: true,
+            userId: true,
+            user: { select: { username: true }}
           }
         },
         messages: {
           select: {
             text: true,
             sentAt: true,
-            sender: {
-              select: {
-                username: true
-              }
-            }
+            sender: { select: { username: true } }
           },
-          orderBy: {
-            sentAt: 'desc'
-          },
-          // This takes only single most recent message for each chat - as a preview
-          // take: 1
+          orderBy: { sentAt: 'desc' },
+          take: 1
         }
       },
-      orderBy: {
-        lastMessageAt: 'desc'
-      }
+      orderBy: { lastMessageAt: 'desc' }
     })
+    const simpleChats = chats.map(chat => ({
+      ...chats,
+      members: chat.members.map(m => ({
+        id: m.userId,
+        username: m.user.username,
+        role: m.role
+      }))
+    }))
     return res.json({
       success: true,
       message: 'Chats now showing.',
-      chats
+      chats: simpleChats
     })
   } catch (error) {
-    console.error('Error finding chats:', error)
     return res.status(500).json({
       success: false,
       message: 'Server error occurred.'

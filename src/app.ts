@@ -33,7 +33,6 @@ interface CustomError extends Error {
 }
 
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err)
   res.status(err.status || 500).json({
     error: true,
     message: 'Internal server error'

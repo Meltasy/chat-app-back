@@ -25,8 +25,6 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
         message: 'You must be a member of the chat you create.'
       })
     }
-    console.log('name:', req.body.name)
-    console.log('members:', req.body.members)
     const chat = await prisma.chat.create({
       data: {
         name,
@@ -34,26 +32,34 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
           // connect and how to use it:
           // https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries#connect-an-existing-record
           // https://www.prisma.io/docs/orm/reference/prisma-client-reference#connect
-          connect: members.map((memberId) => ({ id: memberId }))
+          create: members.map((memberId) => ({
+            role: memberId === req.user!.id ? 'ADMIN' : 'MEMBER',
+            user: { connect: { id: memberId }}
+          }))
         }
       },
       include: {
         members: {
           select: {
-            id: true,
-            username: true
+            role: true,
+            userId: true,
+            user: { select: { username: true } }
           }
         }
       }
     })
-    console.log('chat:', chat)
+    const simpleMembers = chat.members.map(m => ({
+      id: m.userId,
+      username: m.user.username,
+      role: m.role
+    }))
     return res.json({
       success: true,
       message: `${chat.name} created.`,
-      chat
+      chat,
+      members: simpleMembers
     })
   } catch (error) {
-    console.error('Error creating chat:', error)
     return res.status(500).json({
       success: false,
       message: 'Server error occurred while creating chat.'
@@ -70,25 +76,17 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
         message: 'Invalid token payload.'
       })
     }
-    console.log('chatId:', req.params.chatId)
     const chat = await prisma.chat.findUnique({
-      where: {
-        id: req.params.chatId,
-      },
+      where: { id: req.params.chatId },
       include: {
         messages: {
           select: {
             text: true,
             sentAt: true,
-            sender: {
-              select: {
-                username: true
-              }
+            sender: { select: { username: true }
             }
           },
-          orderBy: {
-            sentAt: 'desc'
-          },
+          orderBy: { sentAt: 'desc' },
           // This takes only single most recent message for each chat - as a preview
           // take: 20,
           // This skips
@@ -96,8 +94,9 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
         },
         members: {
           select: {
-            id: true,
-            username: true
+            role: true,
+            userId: true,
+            user: { select: { username: true } }
           }
         }
       }
@@ -108,21 +107,25 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
         message: 'Chat not found.'
       })
     }
-    const isMember = chat.members.some(member => member.id === user.id)
+    const isMember = chat.members.some(m => m.userId === user.id)
     if (!isMember) {
         return res.status(403).json({
         success: false,
         message: 'Not authorized to view this chat.'
       })
     }
-    console.log('chat:', chat)
+    const simpleMembers = chat.members.map(m => ({
+      id: m.userId,
+      username: m.user.username,
+      role: m.role
+    }))
     return res.json({
       success: true,
       message: `${chat.name} now showing.`,
-      chat
+      chat,
+      members: simpleMembers
     })
   } catch (error) {
-    console.error('Error finding chat:', error)
     return res.status(500).json({
       success: false,
       message: 'Server error occurred while finding chat.'
@@ -139,17 +142,10 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
         message: 'Invalid token payload.'
       })
     }
-    console.log('message:', req.body.text)
     const chat = await prisma.chat.findUnique({
-      where: {
-        id: req.params.chatId
-      },
+      where: { id: req.params.chatId },
       include: {
-        members: {
-          select: {
-            id: true
-          }
-        }
+        members: { select: { userId: true } }
       }
     })
     if (!chat) {
@@ -158,7 +154,7 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
         message: 'Chat not found.'
       })
     }
-    const isMember = chat.members.some(member => member.id === user.id)
+    const isMember = chat.members.some(m => m.userId === user.id)
     if (!isMember) {
         return res.status(403).json({
         success: false,
@@ -173,19 +169,14 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
       }
     })
     await prisma.chat.update({
-      where: {
-        id: req.params.chatId
-      },
-      data: {
-        lastMessageAt: new Date()
-      }
+      where: { id: req.params.chatId },
+      data: { lastMessageAt: new Date() }
     })
     return res.json({
       success: true,
       message: 'Message sent successfully.'
     })
   } catch (error) {
-    console.error('Error sending message:', error)
     return res.status(500).json({
       success: false,
       message: 'Server error occurred while sending message.'

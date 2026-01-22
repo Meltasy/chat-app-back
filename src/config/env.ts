@@ -6,6 +6,6 @@ if (!jwtSecret) {
   throw new Error('JWT_SECRET is not defined.')
 }
 
-export const JWT_SECRET: string = jwtSecret
+export const JWT_SECRET = jwtSecret as string
 
 export const PORT = process.env.PORT

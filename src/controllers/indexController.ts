@@ -55,7 +55,6 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
       user: { userId: user.id, username: user.username, email: user.email }
     })
   } catch (error) {
-    console.error('Registration error:', error)
     return res.status(500).json({
       success: false,
       message: 'An error occurred during registration.'
@@ -95,7 +94,6 @@ async function login(req: Request<{}, {}, LoginBody>, res: Response) {
       user: { userId: user.id, username: user.username, email: user.email }
     })
   } catch (error) {
-    console.error('Error logging in:', error)
     return res.status(500).json({
       success: false,
       message: 'User login failed.'
