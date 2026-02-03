@@ -6,7 +6,7 @@ import { CustomJwtPayload } from '../types/express.js'
 const authenticate = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing authorization header.' })
+    return res.status(401).json({ message: 'Missing authorization header.' })
   }
   const token = authHeader.slice(7)
   try {
@@ -18,12 +18,12 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
       !('username' in decoded) ||
       !('email' in decoded)
     ) {
-      return res.status(403).json({ error : 'Invalide token payload.'})
+      return res.status(403).json({ message : 'Invalid token payload.'})
     }
     req.user = decoded as CustomJwtPayload
     next()
   } catch (err) {
-    res.status(403).json({ error: 'Invalid token.' })
+    res.status(403).json({ message: 'Invalid token.' })
   }
 }
 

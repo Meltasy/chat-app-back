@@ -73,7 +73,7 @@ async function getChats(req: Request<UserParams>, res: Response) {
       orderBy: { lastMessageAt: 'desc' }
     })
     const simpleChats = chats.map(chat => ({
-      ...chats,
+      ...chat,
       members: chat.members.map(m => ({
         id: m.userId,
         username: m.user.username,

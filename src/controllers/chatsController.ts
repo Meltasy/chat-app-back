@@ -25,6 +25,16 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
         message: 'You must be a member of the chat you create.'
       })
     }
+    const validUsers = await prisma.user.findMany({
+       where: {id: { in: members } },
+       select: { id: true }
+    })
+    if (validUsers.length !== members.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more member IDs are invalid.'
+      })
+    }
     const chat = await prisma.chat.create({
       data: {
         name,
@@ -161,11 +171,14 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
         message: 'Not authorized to view this chat.'
       })
     }
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
         text: req.body.text,
         senderId: user.id,
         chatId: req.params.chatId
+      },
+      include: {
+        sender: { select : { username: true } }
       }
     })
     await prisma.chat.update({
@@ -174,7 +187,13 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
     })
     return res.json({
       success: true,
-      message: 'Message sent successfully.'
+      message: 'Message sent successfully.',
+      data: {
+        id: message.id,
+        text: message.text,
+        sentAt: message.sentAt,
+        sender: { username: message.sender.username }
+      }
     })
   } catch (error) {
     return res.status(500).json({
