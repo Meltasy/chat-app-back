@@ -20,15 +20,7 @@ const validateNewUser = [
     .trim()
     .notEmpty().withMessage(`Password ${reqErr}`)
     .isLength({ min: 8, max: 24 }).withMessage('Password must be between 8 and 24 characters.')
-    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)(?!.* ).*$/).withMessage('Password must contain one number, one lowercase letter, one uppercase letter, one special character and no spaces.'),
-  body('confirmPassword')
-    .notEmpty().withMessage(`Confirm password ${reqErr}`)
-    .custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error('Passwords do not match.')
-      }
-      return true
-    })
+    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)(?!.* ).*$/).withMessage('Password must contain one number, one lowercase letter, one uppercase letter, one special character and no spaces.')
 ]
 
 const validateLogin = [
