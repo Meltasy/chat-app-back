@@ -18,8 +18,6 @@ interface LoginBody {
 async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
   try {
     let { username, email, password } = req.body
-    username = username.toLowerCase()
-    email = email.toLowerCase()
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -65,7 +63,6 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
 async function login(req: Request<{}, {}, LoginBody>, res: Response) {
   try {
     let { email, password } = req.body
-    email = email.toLowerCase()
     const user = await prisma.user.findUnique({
       where: { email }
     })
