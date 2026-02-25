@@ -7,7 +7,7 @@ import { handleValidation } from '../validations/handleValidation.js'
 
 const chatsRouter = Router()
 
-chatsRouter.post('/new', authenticate, validateNewChat, createChat)
+chatsRouter.post('/new', authenticate, validateNewChat, handleValidation, createChat)
 chatsRouter.get<{ chatId: string }>('/:chatId', authenticate, validateUuidParam('chatId'), getChatMessages)
 chatsRouter.post<{ chatId: string }>('/:chatId', authenticate, validateUuidParam('chatId'), validateNewMessage, handleValidation, sendChatMessage)
 
