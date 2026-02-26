@@ -3,10 +3,6 @@ import { body } from 'express-validator'
 const reqErr = 'is required.'
 
 const validateNewChat = [
-  body('name')
-    .trim()
-    .notEmpty().withMessage(`Name ${reqErr}`)
-    .isLength({ min: 5, max: 100 }).withMessage('Name must be between 5 and 100 characters.'),
   body('members')
     .isArray({ min: 1 }).withMessage('Members must be an array of at least one.')
     .custom((members: string[]) => {
@@ -25,7 +21,7 @@ const validateNewChat = [
 
 const validateNewMessage = [
   body('text')
-    .custom((value) => value.trim().length > 0)
+    .trim()
     .notEmpty().withMessage(`Message ${reqErr}`)
     .isLength({ min: 5, max: 250 }).withMessage('Message must be between 5 and 250 characters.')
 ]

@@ -7,9 +7,9 @@ datasource db {
 }
 
 model User {
-  id          String @id @default(uuid()) @db.Uuid
-  username    String @unique @db.Citext
-  email       String @unique @db.Citext
+  id          String       @id @default(uuid()) @db.Uuid
+  username    String       @unique @db.Citext
+  email       String       @unique @db.Citext
   password    String
   chatMembers ChatMember[]
   messages    Message[]
@@ -30,11 +30,12 @@ model Message {
 }
 
 model Chat {
-  id            String    @id @default(uuid()) @db.Uuid
-  name          String    @db.VarChar(100)
+  id            String       @id @default(uuid()) @db.Uuid
+  name          String?      @db.VarChar(100)
+  isGroup       Boolean      @default(false)
   messages      Message[]
   members       ChatMember[]
-  lastMessageAt DateTime  @default(now())
+  lastMessageAt DateTime     @default(now())
 
   @@index([lastMessageAt])
 }
