@@ -9,6 +9,74 @@ interface SendMessageBody {
   text: string
 }
 
+async function getChats(req: Request, res: Response) {
+  try {
+    const user = req.user
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
+    }
+    const chats = await prisma.chat.findMany({
+      where: {
+        members: {
+          some: { userId: user.id }
+        }
+      },
+      include: {
+        members: {
+          select: {
+            userId: true,
+            role: true,
+            user: { select: { username: true }}
+          }
+        },
+        messages: {
+          select: {
+            text: true,
+            sentAt: true,
+            sender: { select: { username: true } }
+          },
+          orderBy: { sentAt: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: { lastMessageAt: 'desc' }
+    })
+    const simpleChats = chats.map(chat => {
+      let chatName = chat.name
+      if (!chat.isGroup) {
+        const otherUser = chat.members.find(
+          m => m.userId !== user.id
+        )?.user
+        chatName = otherUser?.username ?? 'Unknown User'
+      }
+      return {
+        id: chat.id,
+        name: chatName,
+        isGroup: chat.isGroup,
+        lastMessage: chat.messages[0] ?? null,
+        members: chat.members.map(mem => ({
+          id: mem.userId,
+          username: mem.user.username,
+          role: mem.role
+        }))
+      }
+    })
+    return res.json({
+      success: true,
+      message: 'Chats now showing.',
+      chats: simpleChats
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    })
+  }
+}
+
 async function findPrevDM(memberIds: string[]) {
   if (memberIds.length !== 2) return null
   const chats = await prisma.chat.findMany({
@@ -90,74 +158,6 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
     return res.status(500).json({
       success: false,
       message: 'Server error occurred while creating chat.'
-    })
-  }
-}
-
-async function getChats(req: Request, res: Response) {
-  try {
-    const user = req.user
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token payload.'
-      })
-    }
-    const chats = await prisma.chat.findMany({
-      where: {
-        members: {
-          some: { userId: user.id }
-        }
-      },
-      include: {
-        members: {
-          select: {
-            userId: true,
-            role: true,
-            user: { select: { username: true }}
-          }
-        },
-        messages: {
-          select: {
-            text: true,
-            sentAt: true,
-            sender: { select: { username: true } }
-          },
-          orderBy: { sentAt: 'desc' },
-          take: 1
-        }
-      },
-      orderBy: { lastMessageAt: 'desc' }
-    })
-    const simpleChats = chats.map(chat => {
-      let chatName = chat.name
-      if (!chat.isGroup) {
-        const otherUser = chat.members.find(
-          m => m.userId !== user.id
-        )?.user
-        chatName = otherUser?.username ?? 'Unknown User'
-      }
-      return {
-        id: chat.id,
-        name: chatName,
-        isGroup: chat.isGroup,
-        lastMessage: chat.messages[0] ?? null,
-        members: chat.members.map(mem => ({
-          id: mem.userId,
-          username: mem.user.username,
-          role: mem.role
-        }))
-      }
-    })
-    return res.json({
-      success: true,
-      message: 'Chats now showing.',
-      chats: simpleChats
-    })
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Server error occurred.'
     })
   }
 }
@@ -289,8 +289,8 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
 }
 
 export {
-  createChat,
   getChats,
+  createChat,
   getChatMessages,
   sendChatMessage
 }

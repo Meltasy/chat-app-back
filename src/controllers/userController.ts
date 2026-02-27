@@ -32,6 +32,33 @@ async function getUser(req: Request<UserParams>, res: Response) {
   }
 }
 
+async function getAllUsers(req: Request, res: Response) {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true
+      }
+    })
+    if (!users) {
+      return res.status(404).json({
+        success: false,
+        message: 'No users found.'
+      })
+    }
+    return res.json({
+      success: true,
+      users
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    })
+  }
+}
+
 export {
-  getUser
+  getUser,
+  getAllUsers
 }
