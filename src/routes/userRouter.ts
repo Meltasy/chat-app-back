@@ -5,7 +5,7 @@ import { authenticate } from '../authentication/jwtAuthenticate.js'
 
 const userRouter = Router()
 
-userRouter.get<{ id: string }>('/:id', validateUuidParam('id'), getUser)
 userRouter.get('/allUsers', authenticate, getAllUsers)
+userRouter.get<{ userId: string }>('/:userId', validateUuidParam('userId'), getUser)
 
 export default userRouter

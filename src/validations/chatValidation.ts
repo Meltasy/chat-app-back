@@ -16,7 +16,19 @@ const validateNewChat = [
     .custom((members) => {
       if (new Set(members).size !== members.length) throw new Error('Duplicate members not allowed.')
       return true
-    })
+    }),
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty().withMessage(`Name ${reqErr}`)
+    .isLength({ min: 5, max: 100 }).withMessage('Name must be between 5 and 100 characters.')
+]
+
+const validateChatName = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage(`Name ${reqErr}`)
+    .isLength({ min: 5, max: 100 }).withMessage('Name must be between 5 and 100 characters.')
 ]
 
 const validateNewMessage = [
@@ -28,5 +40,6 @@ const validateNewMessage = [
 
 export {
   validateNewChat,
+  validateChatName,
   validateNewMessage
 }

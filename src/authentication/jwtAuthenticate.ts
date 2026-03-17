@@ -23,7 +23,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
     req.user = decoded as CustomJwtPayload
     next()
   } catch (err) {
-    res.status(403).json({ message: 'Invalid token.' })
+    return res.status(403).json({ message: 'Invalid token.' })
   }
 }
 

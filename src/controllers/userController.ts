@@ -2,17 +2,14 @@ import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
 
 interface UserParams {
-  id: string
+  userId: string
 }
 
 async function getUser(req: Request<UserParams>, res: Response) {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.params.id },
-      select: {
-        id: true,
-        username: true
-      }
+      where: { id: req.params.userId },
+      select: { id: true, username: true }
     })
     if (!user) {
       return res.status(404).json({
@@ -35,12 +32,9 @@ async function getUser(req: Request<UserParams>, res: Response) {
 async function getAllUsers(req: Request, res: Response) {
   try {
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true
-      }
+      select: { id: true, username: true }
     })
-    if (!users) {
+    if (users.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'No users found.'

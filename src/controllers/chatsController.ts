@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 
 interface CreateChatBody {
   members: string[]
+  name?: string
 }
 
 interface SendMessageBody {
@@ -131,7 +132,7 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
     const chat = await prisma.chat.create({
       data: {
         isGroup,
-        ...(isGroup && { name: 'New Group'}),
+        ...(isGroup && { name: req.body.name || 'New Group'}),
         members: {
           create: allMembers.map((memberId) => ({
             role: memberId === req.user!.id ? 'ADMIN' : 'MEMBER',
@@ -162,6 +163,51 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
   }
 }
 
+async function renameChat(req: Request<{chatId: string}, {}, {name: string}>, res: Response) {
+  try {
+    const user = req.user
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
+    }
+    const member = await prisma.chatMember.findUnique({
+      where: { userId_chatId:
+        { userId: user.id,
+          chatId: req.params.chatId
+        }
+      }
+    })
+    if (!member) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not a member of this chat.'
+      })
+    }
+    if (member.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can rename chat.'
+      })
+    }
+    const chat = await prisma.chat.update({
+      where: { id: req.params.chatId },
+      data: { name: req.body.name }
+    })
+    return res.json({
+      success: true,
+      message: 'Chat renamed.',
+      chat
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred while renaming chat.'
+    })
+  }
+}
+
 async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
   try {
     const user = req.user
@@ -181,11 +227,7 @@ async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
             sender: { select: { username: true }
             }
           },
-          orderBy: { sentAt: 'desc' },
-          // This takes only single most recent message for each chat - as a preview
-          // take: 20,
-          // This skips
-          // skip: parseInt(req.query.page) * 20,
+          orderBy: { sentAt: 'asc' },
         },
         members: {
           select: {
@@ -291,6 +333,7 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
 export {
   getChats,
   createChat,
+  renameChat,
   getChatMessages,
   sendChatMessage
 }
