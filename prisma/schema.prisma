@@ -45,7 +45,7 @@ model ChatMember {
   chatId String   @db.Uuid
   role   ChatRole @default(MEMBER)
   user   User     @relation(fields: [userId], references: [id])
-  chat   Chat     @relation(fields: [chatId], references: [id])
+  chat   Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@id([userId, chatId])
 }

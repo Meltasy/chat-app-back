@@ -1,18 +1,23 @@
 import { Router } from 'express'
-import { getChats, createChat, renameChat, getChatMessages, sendChatMessage } from '../controllers/chatsController.js'
-import { authenticate } from '../authentication/jwtAuthenticate.js'
-import { validateNewChat, validateChatName, validateNewMessage } from '../validations/chatValidation.js'
+import { getChats, createChat, renameChat, deleteChat, addMember, removeMember } from '../controllers/chatsController.js'
+import { requireChatRole } from '../middleware/requireChatRole.js'
+import { validateNewChat, validateChatName } from '../validations/chatValidation.js'
 import { validateUuidParam } from '../validations/paramValidation.js'
 import { handleValidation } from '../validations/handleValidation.js'
 
 const chatsRouter = Router()
 
-chatsRouter.use(authenticate)
-
 chatsRouter.get('/', getChats)
 chatsRouter.post('/newChat', validateNewChat, handleValidation, createChat)
-chatsRouter.patch<{ chatId: string }>('/:chatId/name', validateUuidParam('chatId'), validateChatName, handleValidation, renameChat)
-chatsRouter.get<{ chatId: string }>('/:chatId/messages', validateUuidParam('chatId'), handleValidation, getChatMessages)
-chatsRouter.post<{ chatId: string }>('/:chatId/newMessage', validateUuidParam('chatId'), validateNewMessage, handleValidation, sendChatMessage)
+chatsRouter.patch('/:chatId/name', 
+  validateUuidParam('chatId'), validateChatName, handleValidation, 
+  requireChatRole('ADMIN'), renameChat)
+chatsRouter.delete('/:chatId', 
+  validateUuidParam('chatId'), requireChatRole('ADMIN'), deleteChat)
+chatsRouter.post('/:chatId/members', 
+  validateUuidParam('chatId'), requireChatRole('ADMIN'), addMember)
+chatsRouter.delete('/:chatId/members/:userId', 
+  validateUuidParam('chatId'), validateUuidParam('userId'), 
+  requireChatRole('ADMIN'), removeMember)
 
 export default chatsRouter

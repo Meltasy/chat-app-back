@@ -6,10 +6,6 @@ interface CreateChatBody {
   name?: string
 }
 
-interface SendMessageBody {
-  text: string
-}
-
 async function getChats(req: Request, res: Response) {
   try {
     const user = req.user
@@ -35,6 +31,7 @@ async function getChats(req: Request, res: Response) {
         },
         messages: {
           select: {
+            id: true,
             text: true,
             sentAt: true,
             sender: { select: { username: true } }
@@ -100,6 +97,7 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
         message: 'Invalid token payload.'
       })
     }
+    const currentUserId = req.user.id
     const { members }= req.body
     if (!members || !Array.isArray(members) || members.length === 0) {
         return res.status(400).json({
@@ -119,7 +117,48 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
       })
     }
     const isGroup = allMembers.length > 2
-    if (!isGroup) {
+    if (isGroup) {
+      const groupName = req.body.name?.trim() || 'New Group'
+      const duplicate = await prisma.chat.findFirst({
+        where: {
+          isGroup: true,
+          name: groupName,
+          members: { some: {userId: req.user.id } }
+        }
+      })
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message: 'You already have a group with this name.'
+        })
+      }
+      const chat = await prisma.chat.create({
+        data: {
+          isGroup: true,
+          name: groupName,
+          members: {
+            create: allMembers.map((memberId) => ({
+              role: memberId === currentUserId ? 'ADMIN' : 'MEMBER',
+              user: { connect: { id: memberId } }
+            }))
+          }
+        },
+        include: {
+          members: {
+            select: {
+              role: true,
+              userId: true,
+              user: { select: { username: true } }
+            }
+          }
+        }
+      })
+      return res.json({
+        success: true,
+        message: 'Group chat created.',
+        chat
+      })
+    } else {
       const prevDM = await findPrevDM(allMembers)
       if (prevDM) {
         return res.json({
@@ -128,33 +167,32 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
           chat: prevDM
         })
       }
-    }
-    const chat = await prisma.chat.create({
-      data: {
-        isGroup,
-        ...(isGroup && { name: req.body.name || 'New Group'}),
-        members: {
-          create: allMembers.map((memberId) => ({
-            role: memberId === req.user!.id ? 'ADMIN' : 'MEMBER',
-            user: { connect: { id: memberId }}
-          }))
-        }
-      },
-      include: {
-        members: {
-          select: {
-            role: true,
-            userId: true,
-            user: { select: { username: true } }
+      const chat = await prisma.chat.create({
+        data: {
+          isGroup: false,
+          members: {
+            create: allMembers.map((memberId) => ({
+              role: memberId === currentUserId ? 'ADMIN' : 'MEMBER',
+              user: { connect: { id: memberId } }
+            }))
+          }
+        },
+        include: {
+          members: {
+            select: {
+              role: true,
+              userId: true,
+              user: { select: { username: true } }
+            }
           }
         }
-      }
-    })
-    return res.json({
-      success: true,
-      message: isGroup ? 'Group chat created.' : 'Direct message created.',
-      chat
-    })
+      })
+      return res.json({
+        success: true,
+        message: 'Direct message created.',
+        chat
+      })
+    }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -165,32 +203,6 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
 
 async function renameChat(req: Request<{chatId: string}, {}, {name: string}>, res: Response) {
   try {
-    const user = req.user
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token payload.'
-      })
-    }
-    const member = await prisma.chatMember.findUnique({
-      where: { userId_chatId:
-        { userId: user.id,
-          chatId: req.params.chatId
-        }
-      }
-    })
-    if (!member) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not a member of this chat.'
-      })
-    }
-    if (member.role !== 'ADMIN') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admins can rename chat.'
-      })
-    }
     const chat = await prisma.chat.update({
       where: { id: req.params.chatId },
       data: { name: req.body.name }
@@ -208,124 +220,80 @@ async function renameChat(req: Request<{chatId: string}, {}, {name: string}>, re
   }
 }
 
-async function getChatMessages(req: Request<{chatId: string}>, res: Response) {
+async function deleteChat(req: Request<{chatId: string}>, res: Response) {
   try {
-    const user = req.user
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token payload.'
-      })
-    }
-    const chat = await prisma.chat.findUnique({
-      where: { id: req.params.chatId },
-      include: {
-        messages: {
-          select: {
-            text: true,
-            sentAt: true,
-            sender: { select: { username: true }
-            }
-          },
-          orderBy: { sentAt: 'asc' },
-        },
-        members: {
-          select: {
-            role: true,
-            userId: true,
-            user: { select: { username: true } }
-          }
-        }
-      }
-    })
-    if (!chat) {
-      return res.status(404).json({
-        success: false,
-        message: 'Chat not found.'
-      })
-    }
-    const isMember = chat.members.some(m => m.userId === user.id)
-    if (!isMember) {
-        return res.status(403).json({
-        success: false,
-        message: 'Not authorized to view this chat.'
-      })
-    }
-    const simpleMembers = chat.members.map(m => ({
-      id: m.userId,
-      username: m.user.username,
-      role: m.role
-    }))
-    return res.json({
+    await prisma.chat.delete({ where: {id: req.params.chatId } })
+    return res.json({ 
       success: true,
-      message: `${chat.name ?? 'Chat'} now showing.`,
-      chat,
-      members: simpleMembers
+      message: 'Chat deleted.'
     })
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error occurred while finding chat.'
+      message: 'Server error occurred while deleting chat.'
     })
   }
 }
 
-async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBody>, res: Response) {
+async function addMember(req: Request<{ chatId: string }, {}, { userId: string }>, res: Response) {
   try {
-    const user = req.user
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token payload.'
-      })
+    const { userId } = req.body
+    const userExists = await prisma.user.findUnique({ where: { id: userId } })
+    if (!userExists) {
+      return res.status(404).json({ success: false, message: 'User not found.' })
     }
-    const chat = await prisma.chat.findUnique({
-      where: { id: req.params.chatId },
-      include: {
-        members: { select: { userId: true } }
-      }
+    const alreadyMember = await prisma.chatMember.findUnique({
+      where: { userId_chatId: { userId, chatId: req.params.chatId } }
     })
-    if (!chat) {
-      return res.status(404).json ({
+    if (alreadyMember) {
+      return res.status(409).json({
         success: false,
-        message: 'Chat not found.'
+        message: 'User is already a member.'
       })
     }
-    const isMember = chat.members.some(m => m.userId === user.id)
-    if (!isMember) {
-        return res.status(403).json({
-        success: false,
-        message: 'Not authorized to view this chat.'
-      })
-    }
-    const message = await prisma.message.create({
-      data: {
-        text: req.body.text,
-        senderId: user.id,
-        chatId: req.params.chatId
-      },
-      include: {
-        sender: { select : { username: true } }
-      }
-    })
-    await prisma.chat.update({
-      where: { id: req.params.chatId },
-      data: { lastMessageAt: new Date() }
+    const member = await prisma.chatMember.create({
+      data: { userId, chatId: req.params.chatId, role: 'MEMBER' }
     })
     return res.json({
-      success: true,
-      message: 'Message sent successfully.',
-      data: {
-        id: message.id,
-        text: message.text,
-        sentAt: message.sentAt,
-        sender: { username: message.sender.username }
-      }
+      success: true, 
+      message: 'Member added.',
+      member
     })
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error occurred while sending message.'
+      message: 'Server error occurred while adding member.'
+    })
+  }
+}
+
+async function removeMember(req: Request<{ chatId: string, userId: string}>, res: Response) {
+  try {
+    const user = req.user
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid token payload.' })
+    }
+    const { chatId, userId } = req.params
+    const admins = await prisma.chatMember.count({
+      where: { chatId, role: 'ADMIN' }
+    })
+    if (userId === user.id && admins === 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'There must always be at least one admin.'
+      })
+    }
+    await prisma.chatMember.delete({
+      where: { userId_chatId: { userId, chatId } }
+    })
+    return res.json({
+      success: true,
+      message: 'Member removed.'
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred while removing member.'
     })
   }
 }
@@ -334,6 +302,7 @@ export {
   getChats,
   createChat,
   renameChat,
-  getChatMessages,
-  sendChatMessage
+  deleteChat,
+  addMember,
+  removeMember
 }
