@@ -1,7 +1,7 @@
 import { validationResult } from 'express-validator'
-import type { Request, Response, NextFunction } from 'express'
+import type { RequestHandler } from 'express'
 
-const handleValidation = (req: Request, res: Response, next: NextFunction) => {
+const handleValidation: RequestHandler = (req, res, next) => {
   const errors = validationResult(req)
   if(!errors.isEmpty()) {
     return res.status(400).json({

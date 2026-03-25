@@ -1,9 +1,32 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
 
+// Add update member to admin role function
+
 interface CreateChatBody {
   members: string[]
   name?: string
+}
+
+interface ChatIdParams {
+  chatId: string
+  [key: string]: string
+}
+
+interface MemberParams {
+  chatId: string
+  userId: string
+  [key: string]: string
+}
+
+const memberInclude = {
+  members: {
+    select: {
+      role: true,
+      userId: true,
+      user: { select: { username: true } }
+    }
+  }
 }
 
 async function getChats(req: Request, res: Response) {
@@ -16,11 +39,7 @@ async function getChats(req: Request, res: Response) {
       })
     }
     const chats = await prisma.chat.findMany({
-      where: {
-        members: {
-          some: { userId: user.id }
-        }
-      },
+      where: { members: { some: { userId: user.id } } },
       include: {
         members: {
           select: {
@@ -42,7 +61,7 @@ async function getChats(req: Request, res: Response) {
       },
       orderBy: { lastMessageAt: 'desc' }
     })
-    const simpleChats = chats.map(chat => {
+    const previewChats = chats.map(chat => {
       let chatName = chat.name
       if (!chat.isGroup) {
         const otherUser = chat.members.find(
@@ -65,7 +84,7 @@ async function getChats(req: Request, res: Response) {
     return res.json({
       success: true,
       message: 'Chats now showing.',
-      chats: simpleChats
+      chats: previewChats
     })
   } catch (error) {
     return res.status(500).json({
@@ -143,21 +162,9 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
             }))
           }
         },
-        include: {
-          members: {
-            select: {
-              role: true,
-              userId: true,
-              user: { select: { username: true } }
-            }
-          }
-        }
+        include: memberInclude
       })
-      return res.json({
-        success: true,
-        message: 'Group chat created.',
-        chat
-      })
+      return res.json({ success: true, message: 'Group chat created.', chat })
     } else {
       const prevDM = await findPrevDM(allMembers)
       if (prevDM) {
@@ -177,21 +184,9 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
             }))
           }
         },
-        include: {
-          members: {
-            select: {
-              role: true,
-              userId: true,
-              user: { select: { username: true } }
-            }
-          }
-        }
+        include: memberInclude
       })
-      return res.json({
-        success: true,
-        message: 'Direct message created.',
-        chat
-      })
+      return res.json({ success: true, message: 'Direct message created.', chat })
     }
   } catch (error) {
     return res.status(500).json({
@@ -201,17 +196,13 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
   }
 }
 
-async function renameChat(req: Request<{chatId: string}, {}, {name: string}>, res: Response) {
+async function renameChat(req: Request<ChatIdParams, {}, {name: string}>, res: Response) {
   try {
     const chat = await prisma.chat.update({
       where: { id: req.params.chatId },
       data: { name: req.body.name }
     })
-    return res.json({
-      success: true,
-      message: 'Chat renamed.',
-      chat
-    })
+    return res.json({ success: true, message: 'Chat renamed.', chat })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -220,13 +211,10 @@ async function renameChat(req: Request<{chatId: string}, {}, {name: string}>, re
   }
 }
 
-async function deleteChat(req: Request<{chatId: string}>, res: Response) {
+async function deleteChat(req: Request<ChatIdParams>, res: Response) {
   try {
     await prisma.chat.delete({ where: {id: req.params.chatId } })
-    return res.json({ 
-      success: true,
-      message: 'Chat deleted.'
-    })
+    return res.json({ success: true, message: 'Chat deleted.' })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -235,12 +223,15 @@ async function deleteChat(req: Request<{chatId: string}>, res: Response) {
   }
 }
 
-async function addMember(req: Request<{ chatId: string }, {}, { userId: string }>, res: Response) {
+async function addMember(req: Request<ChatIdParams, {}, { userId: string }>, res: Response) {
   try {
     const { userId } = req.body
     const userExists = await prisma.user.findUnique({ where: { id: userId } })
     if (!userExists) {
-      return res.status(404).json({ success: false, message: 'User not found.' })
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      })
     }
     const alreadyMember = await prisma.chatMember.findUnique({
       where: { userId_chatId: { userId, chatId: req.params.chatId } }
@@ -254,11 +245,7 @@ async function addMember(req: Request<{ chatId: string }, {}, { userId: string }
     const member = await prisma.chatMember.create({
       data: { userId, chatId: req.params.chatId, role: 'MEMBER' }
     })
-    return res.json({
-      success: true, 
-      message: 'Member added.',
-      member
-    })
+    return res.json({ success: true, message: 'Member added.', member })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -267,11 +254,14 @@ async function addMember(req: Request<{ chatId: string }, {}, { userId: string }
   }
 }
 
-async function removeMember(req: Request<{ chatId: string, userId: string}>, res: Response) {
+async function removeMember(req: Request<MemberParams>, res: Response) {
   try {
     const user = req.user
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid token payload.' })
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
     }
     const { chatId, userId } = req.params
     const admins = await prisma.chatMember.count({
@@ -286,10 +276,7 @@ async function removeMember(req: Request<{ chatId: string, userId: string}>, res
     await prisma.chatMember.delete({
       where: { userId_chatId: { userId, chatId } }
     })
-    return res.json({
-      success: true,
-      message: 'Member removed.'
-    })
+    return res.json({ success: true, message: 'Member removed.' })
   } catch (error) {
     return res.status(500).json({
       success: false,

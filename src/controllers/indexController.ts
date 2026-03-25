@@ -19,12 +19,7 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
   try {
     let { username, email, password } = req.body
     const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username },
-          { email }
-        ]
-      }
+      where: { OR: [{ username }, { email }] }
     })
     if (existingUser) {
       const conflict = existingUser.username === username ? 'Username' : 'Email'
@@ -35,11 +30,7 @@ async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
     }
     const hashPword = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        password: hashPword
-      }
+      data: { username, email, password: hashPword }
     })
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },

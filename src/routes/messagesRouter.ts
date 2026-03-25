@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { getMessages, sendChatMessage, editMessage, deleteMessage } from '../controllers/messagesController.js'
+import { getMessages, sendMessage, editMessage, deleteMessage } from '../controllers/messagesController.js'
 import { requireChatRole } from '../middleware/requireChatRole.js'
-import { validateNewMessage } from '../validations/chatValidation.js'
+import { validateMessage } from '../validations/chatValidation.js'
 import { validateUuidParam } from '../validations/paramValidation.js'
 import { handleValidation } from '../validations/handleValidation.js'
 
@@ -11,11 +11,12 @@ messagesRouter.get('/:chatId/messages',
   validateUuidParam('chatId'), handleValidation,
   requireChatRole('MEMBER'), getMessages)
 messagesRouter.post('/:chatId/messages', 
-  validateUuidParam('chatId'), validateNewMessage, handleValidation, 
-  requireChatRole('MEMBER'), sendChatMessage)
+  validateUuidParam('chatId'), validateMessage, handleValidation, 
+  requireChatRole('MEMBER'), sendMessage)
+// I've added validateMessage here as it was missing. Do you see any issues with that?
 messagesRouter.patch('/:chatId/messages/:messageId', 
-  validateUuidParam('chatId'), validateUuidParam('messageId'), handleValidation, 
-  requireChatRole('MEMBER'), editMessage)
+  validateUuidParam('chatId'), validateUuidParam('messageId'), validateMessage,
+  handleValidation, requireChatRole('MEMBER'), editMessage)
 messagesRouter.delete('/:chatId/messages/:messageId', 
   validateUuidParam('chatId'), validateUuidParam('messageId'), 
   requireChatRole('MEMBER'), deleteMessage)

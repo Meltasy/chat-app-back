@@ -1,3 +1,5 @@
+// Add real time messaging
+// Add uploading static files, e.g. profile pics
 // Add testing using SuperTest: https://www.theodinproject.com/lessons/nodejs-testing-routes-and-controllers
 
 import express, { Request, Response, NextFunction } from 'express'
@@ -19,9 +21,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 app.use('/index', indexRouter)
-app.use('/user', userRouter)
-app.use('/chats', authenticate, chatsRouter)
-app.use('/chats', authenticate, messagesRouter)
+app.use('/user', authenticate, userRouter)
+app.use('/chats', authenticate)
+app.use('/chats', chatsRouter)
+app.use('/chats', messagesRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('The backend is up and running.')

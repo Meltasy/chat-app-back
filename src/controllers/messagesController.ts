@@ -1,11 +1,22 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
 
-interface SendMessageBody {
+interface MessageBody {
   text: string
 }
 
-async function getMessages(req: Request<{chatId: string}>, res: Response) {
+interface ChatParams {
+  chatId: string
+  [key: string]: string
+}
+
+interface MessageParams {
+  chatId: string
+  messageId: string
+  [key: string]: string
+}
+
+async function getMessages(req: Request<ChatParams>, res: Response) {
   try {
     const chat = await prisma.chat.findUnique({
       where: { id: req.params.chatId },
@@ -30,10 +41,7 @@ async function getMessages(req: Request<{chatId: string}>, res: Response) {
       }
     })
     if (!chat) {
-      return res.status(404).json({
-        success: false,
-        message: 'Chat not found.'
-      })
+      return res.status(404).json({ success: false, message: 'Chat not found.' })
     }
     return res.json({
       success: true,
@@ -58,7 +66,7 @@ async function getMessages(req: Request<{chatId: string}>, res: Response) {
   }
 }
 
-async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBody>, res: Response) {
+async function sendMessage(req: Request<ChatParams, {}, MessageBody>, res: Response) {
   try {
     const message = await prisma.message.create({
       data: {
@@ -92,14 +100,14 @@ async function sendChatMessage(req: Request<{chatId: string}, {}, SendMessageBod
   }
 }
 
-async function editMessage(
-  req: Request<{ chatId: string; messageId: string }, {}, { text: string }>,
-  res: Response
-) {
+async function editMessage( req: Request<MessageParams, {}, MessageBody>, res: Response) {
   try {
     const user = req.user
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid token payload.' })
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
     }
     const { messageId, chatId } = req.params
     const message = await prisma.message.findUnique({ where: { id: messageId } })
@@ -117,11 +125,7 @@ async function editMessage(
       data: { text: req.body.text },
       select: { id: true, text: true, sentAt: true }
     })
-    return res.json({
-      success: true,
-      message: 'Message updated.',
-      data: updated
-    })
+    return res.json({ success: true, message: 'Message updated.', data: updated })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -130,11 +134,14 @@ async function editMessage(
   }
 }
 
-async function deleteMessage(req: Request<{ chatId: string; messageId: string }>, res: Response) {
+async function deleteMessage(req: Request<MessageParams>, res: Response) {
   try {
     const user = req.user
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid token payload.' })
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      })
     }
     const { messageId, chatId } = req.params
     const message = await prisma.message.findUnique({ where: { id: messageId } })
@@ -148,10 +155,7 @@ async function deleteMessage(req: Request<{ chatId: string; messageId: string }>
       })
     }
     await prisma.message.delete({ where: { id: messageId } })
-    return res.json({ 
-      success: true,
-      message: 'Message deleted.'
-    })
+    return res.json({ success: true, message: 'Message deleted.' })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -162,7 +166,7 @@ async function deleteMessage(req: Request<{ chatId: string; messageId: string }>
 
 export {
   getMessages,
-  sendChatMessage,
+  sendMessage,
   editMessage,
   deleteMessage
 }

@@ -31,7 +31,7 @@ const validateChatName = [
     .isLength({ min: 5, max: 100 }).withMessage('Name must be between 5 and 100 characters.')
 ]
 
-const validateNewMessage = [
+const validateMessage = [
   body('text')
     .trim()
     .notEmpty().withMessage(`Message ${reqErr}`)
@@ -41,5 +41,5 @@ const validateNewMessage = [
 export {
   validateNewChat,
   validateChatName,
-  validateNewMessage
+  validateMessage
 }

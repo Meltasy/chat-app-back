@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 
 interface UserParams {
   userId: string
+  [key: string]: string
 }
 
 async function getUser(req: Request<UserParams>, res: Response) {
@@ -17,10 +18,7 @@ async function getUser(req: Request<UserParams>, res: Response) {
         message: 'User not found.'
       })
     }
-    return res.json({
-      success: true,
-      user
-    })
+    return res.json({ success: true, user })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -40,10 +38,7 @@ async function getAllUsers(req: Request, res: Response) {
         message: 'No users found.'
       })
     }
-    return res.json({
-      success: true,
-      users
-    })
+    return res.json({ success: true, users })
   } catch (error) {
     return res.status(500).json({
       success: false,

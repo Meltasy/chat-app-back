@@ -5,6 +5,8 @@ import { validateNewChat, validateChatName } from '../validations/chatValidation
 import { validateUuidParam } from '../validations/paramValidation.js'
 import { handleValidation } from '../validations/handleValidation.js'
 
+// Add update member to admin role route
+
 const chatsRouter = Router()
 
 chatsRouter.get('/', getChats)
