@@ -13,7 +13,6 @@ messagesRouter.get('/:chatId/messages',
 messagesRouter.post('/:chatId/messages', 
   validateUuidParam('chatId'), validateMessage, handleValidation, 
   requireChatRole('MEMBER'), sendMessage)
-// I've added validateMessage here as it was missing. Do you see any issues with that?
 messagesRouter.patch('/:chatId/messages/:messageId', 
   validateUuidParam('chatId'), validateUuidParam('messageId'), validateMessage,
   handleValidation, requireChatRole('MEMBER'), editMessage)

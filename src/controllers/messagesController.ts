@@ -26,7 +26,7 @@ async function getMessages(req: Request<ChatParams>, res: Response) {
             id: true,
             text: true,
             sentAt: true,
-            sender: { select: { username: true }
+            sender: { select: { id: true, username: true }
             }
           },
           orderBy: { sentAt: 'asc' },
@@ -75,7 +75,7 @@ async function sendMessage(req: Request<ChatParams, {}, MessageBody>, res: Respo
         chatId: req.params.chatId
       },
       include: {
-        sender: { select : { username: true } }
+        sender: { select : { id: true, username: true } }
       }
     })
     await prisma.chat.update({
@@ -89,7 +89,7 @@ async function sendMessage(req: Request<ChatParams, {}, MessageBody>, res: Respo
         id: message.id,
         text: message.text,
         sentAt: message.sentAt,
-        sender: { username: message.sender.username }
+        sender: { id: message.sender.id, username: message.sender.username }
       }
     })
   } catch (error) {
