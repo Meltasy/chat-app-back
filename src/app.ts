@@ -1,8 +1,10 @@
-// Add real time messaging
 // Add uploading static files, e.g. profile pics
+// Add IA for predictive messaging, or creating profile pic, or ??
 // Add testing using SuperTest: https://www.theodinproject.com/lessons/nodejs-testing-routes-and-controllers
 
 import express, { Request, Response, NextFunction } from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
 import cors from 'cors'
 import indexRouter from './routes/indexRouter.js'
 import userRouter from './routes/userRouter.js'
@@ -12,11 +14,33 @@ import { authenticate } from './authentication/jwtAuthenticate.js'
 import { PORT } from './config/env.js'
 
 const app = express()
+const httpServer = createServer(app)
+
+export const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    credentials: true
+  }
+})
+
+io.on('connection', (socket) => {
+  console.log('Socket connected:', socket.id)
+  socket.on('join_chat', (chatId: string) => {
+    socket.join(chatId)
+  })
+  socket.on('leave_chat', (chatId: string) => {
+    socket.leave(chatId)
+  })
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected', socket.id)
+  })
+})
 
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }))
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -48,6 +72,6 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Message App listening on port ${PORT}`)
 })

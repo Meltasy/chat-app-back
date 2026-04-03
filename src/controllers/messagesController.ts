@@ -1,5 +1,6 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
+import { io } from '../app.js'
 
 interface MessageBody {
   text: string
@@ -82,6 +83,13 @@ async function sendMessage(req: Request<ChatParams, {}, MessageBody>, res: Respo
       where: { id: req.params.chatId },
       data: { lastMessageAt: new Date() }
     })
+    const messageData = {
+      id: message.id,
+      text: message.text,
+      sentAt: message.sentAt,
+      sender: { id: message.sender.id, username: message.sender.username }
+    }
+    io.to(req.params.chatId).emit('new_message', messageData)
     return res.json({
       success: true,
       message: 'Message sent successfully.',
@@ -125,6 +133,10 @@ async function editMessage( req: Request<MessageParams, {}, MessageBody>, res: R
       data: { text: req.body.text },
       select: { id: true, text: true, sentAt: true }
     })
+    io.to(req.params.chatId).emit('message_edited', {
+      id: updated.id,
+      text: updated.text
+    })
     return res.json({ success: true, message: 'Message updated.', data: updated })
   } catch (error) {
     return res.status(500).json({
@@ -155,6 +167,7 @@ async function deleteMessage(req: Request<MessageParams>, res: Response) {
       })
     }
     await prisma.message.delete({ where: { id: messageId } })
+    io.to(req.params.chatId).emit('message_deleted', { id: messageId })
     return res.json({ success: true, message: 'Message deleted.' })
   } catch (error) {
     return res.status(500).json({
