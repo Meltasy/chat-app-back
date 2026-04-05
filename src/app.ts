@@ -25,6 +25,9 @@ export const io = new Server(httpServer, {
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id)
+  socket.on('join_user_room', (userId: string) => {
+    socket.join(`user_${userId}`)
+  })
   socket.on('join_chat', (chatId: string) => {
     socket.join(chatId)
   })

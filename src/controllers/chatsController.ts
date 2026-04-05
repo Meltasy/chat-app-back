@@ -1,5 +1,6 @@
 import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
+import { io } from '../app.js'
 
 // Add update member to admin role function
 
@@ -17,6 +18,17 @@ interface MemberParams {
   chatId: string
   userId: string
   [key: string]: string
+}
+
+interface CreatedChat {
+  id: string
+  name: string | null
+  isGroup: boolean
+  members: {
+    userId: string
+    user: { username: string }
+    role: string
+  }[]
 }
 
 const memberInclude = {
@@ -108,6 +120,26 @@ async function findPrevDM(memberIds: string[]) {
   return chats.find(chat => chat.members.length === 2) ?? null
 }
 
+function emitChatCreated(chat: CreatedChat) {
+  for (const member of chat.members) {
+    const chatName = chat.isGroup
+     ? chat.name
+     : chat.members.find(m => m.userId !== member.userId)?.user.username ?? 'Uknown User'
+    const formattedChat = {
+      id: chat.id,
+      name: chatName,
+      isGroup: chat.isGroup,
+      members: chat.members.map(m => ({
+        id: m.userId,
+        username: m.user.username,
+        role: m.role
+      })),
+      lastMessage: null
+    }
+    io.to(`user_${member.userId}`).emit('chat_created', formattedChat)
+  }    
+}
+
 async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
   try {
     if (!req.user) {
@@ -164,6 +196,7 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
         },
         include: memberInclude
       })
+      emitChatCreated(chat)
       return res.json({ success: true, message: 'Group chat created.', chat })
     } else {
       const prevDM = await findPrevDM(allMembers)
@@ -186,6 +219,7 @@ async function createChat(req: Request<{}, {}, CreateChatBody>, res: Response) {
         },
         include: memberInclude
       })
+      emitChatCreated(chat)
       return res.json({ success: true, message: 'Direct message created.', chat })
     }
   } catch (error) {
@@ -200,7 +234,12 @@ async function renameChat(req: Request<ChatIdParams, {}, {name: string}>, res: R
   try {
     const chat = await prisma.chat.update({
       where: { id: req.params.chatId },
-      data: { name: req.body.name }
+      data: { name: req.body.name },
+      include: { members: { select: { userId: true } } }
+    })
+    io.to(req.params.chatId).emit('chat_renamed', {
+      chatId: req.params.chatId,
+      name: req.body.name
     })
     return res.json({ success: true, message: 'Chat renamed.', chat })
   } catch (error) {
@@ -213,7 +252,17 @@ async function renameChat(req: Request<ChatIdParams, {}, {name: string}>, res: R
 
 async function deleteChat(req: Request<ChatIdParams>, res: Response) {
   try {
-    await prisma.chat.delete({ where: {id: req.params.chatId } })
+    const chat = await prisma.chat.findUnique({
+      where: { id: req.params.chatId },
+      include: { members: { select: { userId: true } } }
+    })
+    if (!chat) {
+      return res.status(404).json({ success: false, message: 'Chat not found.' })
+    }
+    await prisma.chat.delete({ where: { id: req.params.chatId } })
+    for (const member of chat.members) {
+      io.to(`user_${member.userId}`).emit('chat_deleted', { chatId: req.params.chatId })
+    }
     return res.json({ success: true, message: 'Chat deleted.' })
   } catch (error) {
     return res.status(500).json({

@@ -89,7 +89,10 @@ async function sendMessage(req: Request<ChatParams, {}, MessageBody>, res: Respo
       sentAt: message.sentAt,
       sender: { id: message.sender.id, username: message.sender.username }
     }
-    io.to(req.params.chatId).emit('new_message', messageData)
+    io.to(req.params.chatId).emit('new_message', {
+      ...messageData,
+      chatId: req.params.chatId
+    })
     return res.json({
       success: true,
       message: 'Message sent successfully.',
@@ -135,7 +138,8 @@ async function editMessage( req: Request<MessageParams, {}, MessageBody>, res: R
     })
     io.to(req.params.chatId).emit('message_edited', {
       id: updated.id,
-      text: updated.text
+      text: updated.text,
+      chatId: req.params.chatId
     })
     return res.json({ success: true, message: 'Message updated.', data: updated })
   } catch (error) {
