@@ -9,9 +9,11 @@
 
 **Add web address above**
 
-A full-stack real-time chat app backend supporting direct messages and group chats, with live message delivery powered by Socket.IO.
+A full-stack real-time chat app supporting direct messages and group chats, with live message delivery powered by Socket.IO.
 
 Check out my [Chat App]()!
+
+See the frontend source code [here](https://github.com/Meltasy/chat-app-front).
 
 **Add web address above**
 
