@@ -1,11 +1,8 @@
-// Add uploading static files, e.g. profile pics
-// Add IA for predictive messaging, or creating profile pic, or ??
-// Add testing using SuperTest: https://www.theodinproject.com/lessons/nodejs-testing-routes-and-controllers
-
 import express, { Request, Response, NextFunction } from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import cors from 'cors'
+import rateLimit from 'express-rate-limit'
 import indexRouter from './routes/indexRouter.js'
 import userRouter from './routes/userRouter.js'
 import chatsRouter from './routes/chatsRouter.js'
@@ -15,6 +12,12 @@ import { PORT } from './config/env.js'
 
 const app = express()
 const httpServer = createServer(app)
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  message: { error: true, message: 'Too many requests. Please try again later.' }
+})
 
 export const io = new Server(httpServer, {
   cors: {
@@ -47,7 +50,7 @@ app.use(cors({
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/index', indexRouter)
+app.use('/index', authLimiter, indexRouter)
 app.use('/user', authenticate, userRouter)
 app.use('/chats', authenticate)
 app.use('/chats', chatsRouter)
