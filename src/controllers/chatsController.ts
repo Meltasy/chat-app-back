@@ -2,8 +2,6 @@ import { prisma } from '../prisma.js'
 import type { Request, Response } from 'express'
 import { io } from '../app.js'
 
-// Add update member to admin role function
-
 interface CreateChatBody {
   members: string[]
   name?: string
@@ -303,6 +301,43 @@ async function addMember(req: Request<ChatIdParams, {}, { userId: string }>, res
   }
 }
 
+async function updateMemberRole(req: Request<MemberParams>, res: Response) {
+  try {
+    const { chatId, userId } = req.params
+    const memberExists = await prisma.chatMember.findUnique({
+      where: { userId_chatId: { userId, chatId } }
+    })
+    if (!memberExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found in this chat.'
+      })
+    }
+    const admins = await prisma.chatMember.count({
+      where: { chatId, role: 'ADMIN' }
+    })
+    if (memberExists.role === 'ADMIN' && admins === 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'There must always be at least one admin.'
+      })
+    }
+    const newRole = memberExists.role === 'ADMIN' ? 'MEMBER' : 'ADMIN'
+    const updated = await prisma.chatMember.update({
+      where: { userId_chatId: { userId, chatId } },
+      data: { role: newRole }
+    })
+    // Below not currently being used - can use to update the UI in real time when role changes
+    io.to(chatId).emit('member_role_updated', { chatId, userId, role: newRole })
+    return res.json({ success: true, message: 'Member role updated.', member: updated })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred while updating member role.'
+    })
+  }
+}
+
 async function removeMember(req: Request<MemberParams>, res: Response) {
   try {
     const user = req.user
@@ -340,5 +375,6 @@ export {
   renameChat,
   deleteChat,
   addMember,
+  updateMemberRole,
   removeMember
 }

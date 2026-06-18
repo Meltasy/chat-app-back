@@ -1,11 +1,10 @@
 import { Router } from 'express'
-import { getChats, createChat, renameChat, deleteChat, addMember, removeMember } from '../controllers/chatsController.js'
+import { getChats, createChat, renameChat, deleteChat, addMember, 
+  updateMemberRole, removeMember } from '../controllers/chatsController.js'
 import { requireChatRole } from '../middleware/requireChatRole.js'
 import { validateNewChat, validateChatName } from '../validations/chatValidation.js'
 import { validateUuidParam } from '../validations/paramValidation.js'
 import { handleValidation } from '../validations/handleValidation.js'
-
-// Add update member to admin role route
 
 const chatsRouter = Router()
 
@@ -18,6 +17,9 @@ chatsRouter.delete('/:chatId',
   validateUuidParam('chatId'), requireChatRole('ADMIN'), deleteChat)
 chatsRouter.post('/:chatId/members', 
   validateUuidParam('chatId'), requireChatRole('ADMIN'), addMember)
+chatsRouter.patch('/:chatId/members/:userId/role',
+  validateUuidParam('chatId'), validateUuidParam('userId'),
+  requireChatRole('ADMIN'), updateMemberRole)
 chatsRouter.delete('/:chatId/members/:userId', 
   validateUuidParam('chatId'), validateUuidParam('userId'), 
   requireChatRole('ADMIN'), removeMember)
