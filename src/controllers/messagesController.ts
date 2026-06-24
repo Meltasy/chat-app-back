@@ -19,6 +19,8 @@ interface MessageParams {
 
 async function getMessages(req: Request<ChatParams>, res: Response) {
   try {
+    const { cursor, limit } = req.query
+    const take = Number(limit) || 30
     const chat = await prisma.chat.findUnique({
       where: { id: req.params.chatId },
       include: {
@@ -30,7 +32,12 @@ async function getMessages(req: Request<ChatParams>, res: Response) {
             sender: { select: { id: true, username: true }
             }
           },
-          orderBy: { sentAt: 'asc' },
+          orderBy: { sentAt: 'desc' },
+          take,
+          ...(cursor && {
+            cursor: { id: String(cursor) },
+            skip: 1
+          })
         },
         members: {
           select: {
@@ -44,6 +51,7 @@ async function getMessages(req: Request<ChatParams>, res: Response) {
     if (!chat) {
       return res.status(404).json({ success: false, message: 'Chat not found.' })
     }
+    const orderedMessages = [...chat.messages].reverse()
     return res.json({
       success: true,
       message: `${chat.name ?? 'Chat'} now showing.`,
@@ -56,8 +64,9 @@ async function getMessages(req: Request<ChatParams>, res: Response) {
           username: m.user.username,
           role: m.role
         })),
-        messages: chat.messages
-      }
+        messages: orderedMessages
+      },
+      hasMore: chat.messages.length === take
     })
   } catch (error) {
     return res.status(500).json({

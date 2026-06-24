@@ -327,7 +327,6 @@ async function updateMemberRole(req: Request<MemberParams>, res: Response) {
       where: { userId_chatId: { userId, chatId } },
       data: { role: newRole }
     })
-    // Below not currently being used - can use to update the UI in real time when role changes
     io.to(chatId).emit('member_role_updated', { chatId, userId, role: newRole })
     return res.json({ success: true, message: 'Member role updated.', member: updated })
   } catch (error) {
