@@ -1,6 +1,8 @@
 import { prisma } from '../prisma.js'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import type { Request, Response } from 'express'
+import { JWT_SECRET } from '../config/env.js'
 
 interface UserParams {
   userId: string
@@ -81,9 +83,15 @@ async function updateUsername(req: Request<{}, {}, UpdateUsernameBody>, res: Res
       data: { username },
       select: { id: true, username: true, email: true }
     })
+    const token = jwt.sign(
+      { id: updated.id, username: updated.username, email: updated.email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    )
     return res.json({
       success: true,
       message: 'Username updated.',
+      token,
       user: updated
     })
   } catch (error) {
