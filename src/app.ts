@@ -8,10 +8,9 @@ import userRouter from './routes/userRouter.js'
 import chatsRouter from './routes/chatsRouter.js'
 import messagesRouter from './routes/messagesRouter.js'
 import { authenticate } from './authentication/jwtAuthenticate.js'
-import { PORT } from './config/env.js'
 
-const app = express()
-const httpServer = createServer(app)
+export const app = express()
+export const httpServer = createServer(app)
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -76,8 +75,4 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
     error: true,
     message: 'Internal server error'
   })
-})
-
-httpServer.listen(PORT, () => {
-  console.log(`Message App listening on port ${PORT}`)
 })
