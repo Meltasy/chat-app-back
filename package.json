@@ -18,7 +18,7 @@
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -41,6 +41,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.0",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
     "jest": "^30.4.2",
     "prisma": "^7.8.0",
     "supertest": "^7.2.2",

@@ -26,11 +26,10 @@ See the frontend source code [here](https://github.com/Meltasy/chat-app-front).
 
 ## Future Improvements
 
-* Typing indicators to show when another user is composing a message
-* Read receipts so users know when their messages have been seen
-* User presence indicators showing online/offline status
-* Image and file uploads in messages
+* Image uploads for profile pictures and in messages
+* File upload in messages
 * Push notifications for new messages
+* AI-generated profile pictures created from text prompts
 
 ## Tech Stack
 

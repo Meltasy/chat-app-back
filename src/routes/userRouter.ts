@@ -7,7 +7,7 @@ import { handleValidation } from '../validations/handleValidation.js'
 const userRouter = Router()
 
 userRouter.get('/allUsers', getAllUsers)
-userRouter.get('/:userId', validateUuidParam('userId'), getUser)
+userRouter.get('/:userId', validateUuidParam('userId'), handleValidation, getUser)
 userRouter.patch('/username', validateUpdateUsername, handleValidation, updateUsername)
 userRouter.patch('/password', validateUpdatePassword, handleValidation, updatePassword)
 
