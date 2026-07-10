@@ -1,0 +1,159 @@
+ import request from 'supertest'
+ import { randomUUID } from 'node:crypto'
+ import { app } from '../helpers/testServer.js'
+ import { registerUser } from '../helpers/authHelper.js'
+ import { createChat } from '../helpers/chatHelper.js'
+ import { resetDatabase, disconnectPrisma } from '../helpers/prismaTestClient.js'
+
+beforeEach(async () => {
+  await resetDatabase()
+})
+
+afterAll(async () => {
+  await resetDatabase()
+  await disconnectPrisma()
+})
+
+describe('GET /chats', () => {
+  it('rejects requests with no auth token with 401', async () => {
+    const res = await request(app).get('/chats')
+    expect(res.status).toBe(401)
+  })
+  it('returns an empty list when the user has no chats', async () => {
+    const dragon = await registerUser()
+    const res = await request(app)
+      .get('/chats')
+      .set('Authorization', `Bearer ${dragon.token}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.chats).toEqual([])
+  })
+  it('returns a DM with the other member\'s username as its name', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const chat = await createChat({ token: dragon.token, memberIds: [lucky.userId] })
+    const res = await request(app)
+      .get('/chats')
+      .set('Authorization', `Bearer ${dragon.token}`)
+    expect(res.status).toBe(200)
+    expect(res.body.chats).toHaveLength(1)
+    expect(res.body.chats[0]).toMatchObject({
+      id: chat.id,
+      name: lucky.username,
+      isGroup: false,
+      lastMessage: null
+    })
+  })
+  it('does not return chats the user is not a member of', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const jasmine = await registerUser()
+    await createChat({ token: dragon.token, memberIds: [lucky.userId] })
+    const res = await request(app)
+      .get('/chats')
+      .set('Authorization', `Bearer ${jasmine.token}`)
+    expect(res.status).toBe(200)
+    expect(res.body.chats).toEqual([])
+  })
+})
+
+describe('POST /chats/newChat', () => {
+  it('rejects requests with no auth token with 401', async () => {
+    const res = await request(app)
+      .post('/chats/newChat')
+      .send({ members: [randomUUID()] })
+    expect(res.status).toBe(401)
+  })
+  it('rejects an empty members array with 400', async () => {
+    const dragon = await registerUser()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [] })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+  it('rejects a malformed (non-UUID) member id with 400 at the validation layer', async () => {
+    const lucky = await registerUser()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${lucky.token}`)
+      .send({ members: ['not-a-valid-uuid'] })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+  it('rejects duplicate member ids in the same array with 400', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [lucky.userId, lucky.userId] })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+  it('rejects a well-formed but non-existant member id with 400 at the controller layer', async () => {
+    const lucky = await registerUser()
+    const nonExistantId = randomUUID()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${lucky.token}`)
+      .send({ members: [nonExistantId] })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+  it('creates a DM when the total member count is exactly 2', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [lucky.userId] })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.chat.isGroup).toBe(false)
+    expect(res.body.chat.members).toHaveLength(2)
+  })
+  it('returns the existing DM instead of creating a duplicate', async () => {
+    const dragon = await registerUser()
+    const jasmine = await registerUser()
+    const firstChat = await createChat({ token: dragon.token, memberIds: [jasmine.userId] })
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [jasmine.userId] })
+    expect(res.status).toBe(200)
+    expect(res.body.message).toBe('Direct message already exists.')
+    expect(res.body.chat.id).toBe(firstChat.id)
+  })
+  it('creates a group chat when the total member count is more than 2', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const jasmine = await registerUser()
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [lucky.userId, jasmine.userId], name: 'Summer Holiday' })
+    expect(res.status).toBe(200)
+    expect(res.body.chat.isGroup).toBe(true)
+    expect(res.body.chat.name).toBe('Summer Holiday')
+    expect(res.body.chat.members).toHaveLength(3)
+  })
+  it('rejects a second group chat with the same name from the same creator with 409', async () => {
+    const dragon = await registerUser()
+    const lucky = await registerUser()
+    const jasmine = await registerUser()
+    const warrior = await registerUser()
+    await createChat({
+      token: dragon.token,
+      memberIds: [lucky.userId, jasmine.userId],
+      name: 'Summer Holiday'
+    })
+    const res = await request(app)
+      .post('/chats/newChat')
+      .set('Authorization', `Bearer ${dragon.token}`)
+      .send({ members: [jasmine.userId, warrior.userId], name: 'Summer Holiday' })
+    expect(res.status).toBe(409)
+    expect(res.body.success).toBe(false)
+  })
+})

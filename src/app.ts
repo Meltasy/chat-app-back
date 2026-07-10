@@ -15,6 +15,7 @@ export const httpServer = createServer(app)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  skip: () => process.env.NODE_ENV === 'test',
   message: { error: true, message: 'Too many requests. Please try again later.' }
 })
 
