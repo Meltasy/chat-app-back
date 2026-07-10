@@ -5,15 +5,10 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-v11.7.0-red.svg)](https://www.npmjs.com/)
 [![Repo Size](https://img.shields.io/github/repo-size/Meltasy/chat-app-back)](https://github.com/Meltasy/chat-app-back)
-[![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)]()
-
-**Add web address above**
 
 A full-stack real-time chat app supporting direct messages and group chats, with live message delivery powered by Socket.IO.
 
 See the frontend source code [here](https://github.com/Meltasy/chat-app-front).
-
-**Add web address above**
 
 ## Features
 
