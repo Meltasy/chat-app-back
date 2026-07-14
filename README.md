@@ -4,6 +4,7 @@
 [![ECMAScript](https://img.shields.io/badge/ECMAScript-2025-blue.svg)](https://ecma-international.org/publications-and-standards/standards/ecma-262/)
 [![Node.js](https://img.shields.io/badge/Node.js-v22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-v11.7.0-red.svg)](https://www.npmjs.com/)
+[![Jest Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://jestjs.io/)
 [![Repo Size](https://img.shields.io/github/repo-size/Meltasy/chat-app-back)](https://github.com/Meltasy/chat-app-back)
 
 A full-stack real-time chat app supporting direct messages and group chats, with live message delivery powered by Socket.IO.

@@ -347,6 +347,15 @@ async function removeMember(req: Request<MemberParams>, res: Response) {
       })
     }
     const { chatId, userId } = req.params
+    const memberExists = await prisma.chatMember.findUnique({
+      where: { userId_chatId: { userId, chatId } }
+    })
+    if (!memberExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found in this chat.'
+      })
+    }
     const admins = await prisma.chatMember.count({
       where: { chatId, role: 'ADMIN' }
     })
