@@ -92,13 +92,13 @@ describe('POST /chats/newChat', () => {
     expect(res.status).toBe(400)
     expect(res.body.success).toBe(false)
   })
-  it('rejects a well-formed but non-existant member id with 400 at the controller layer', async () => {
+  it('rejects a well-formed but non-existent member id with 400 at the controller layer', async () => {
     const lucky = await registerUser()
-    const nonExistantId = randomUUID()
+    const nonExistentId = randomUUID()
     const res = await request(app)
       .post('/chats/newChat')
       .set('Authorization', `Bearer ${lucky.token}`)
-      .send({ members: [nonExistantId] })
+      .send({ members: [nonExistentId] })
     expect(res.status).toBe(400)
     expect(res.body.success).toBe(false)
   })
@@ -158,7 +158,7 @@ describe('POST /chats/newChat', () => {
   })
 })
 
-describe('PATCH /chats/:chatId/name (renameChat)', () => {
+describe('PATCH /chats/:chatId/name', () => {
   it('rejects requests with no auth token with 401', async () => {
     const jasmine = await registerUser()
     const warrior = await registerUser()
@@ -207,7 +207,7 @@ describe('PATCH /chats/:chatId/name (renameChat)', () => {
   })
 })
 
-describe('DELETE /chats/:chatId (deleteChat)', () => {
+describe('DELETE /chats/:chatId', () => {
   it('rejects requests with no auth token with 401', async () => {
     const jasmine = await registerUser()
     const warrior = await registerUser()
@@ -240,7 +240,7 @@ describe('DELETE /chats/:chatId (deleteChat)', () => {
   })
 })
 
-describe('POST /chats/:chatId/members (addMember)', () => {
+describe('POST /chats/:chatId/members', () => {
   it('rejects requests with no auth token with 401', async () => {
     const lucky = await registerUser()
     const jasmine = await registerUser()
@@ -305,7 +305,7 @@ describe('POST /chats/:chatId/members (addMember)', () => {
   })
 })
 
-describe('PATCH /chats/:chatId/members/:userId/role (updateMemberRole)', () => {
+describe('PATCH /chats/:chatId/members/:userId/role', () => {
   it('rejects requests with no auth token with 401', async () => {
     const lucky = await registerUser()
     const jasmine = await registerUser()
@@ -370,7 +370,7 @@ describe('PATCH /chats/:chatId/members/:userId/role (updateMemberRole)', () => {
   })
 })
 
-describe('DELETE /chats/:chatId/members/:userId (removeMember)', () => {
+describe('DELETE /chats/:chatId/members/:userId', () => {
   it('rejects requests with no auth token with 401', async () => {
     const jasmine = await registerUser()
     const warrior = await registerUser()

@@ -17,7 +17,7 @@ messagesRouter.patch('/:chatId/messages/:messageId',
   validateUuidParam('chatId'), validateUuidParam('messageId'), validateMessage,
   handleValidation, requireChatRole('MEMBER'), editMessage)
 messagesRouter.delete('/:chatId/messages/:messageId', 
-  validateUuidParam('chatId'), validateUuidParam('messageId'), 
+  validateUuidParam('chatId'), validateUuidParam('messageId'), handleValidation,
   requireChatRole('MEMBER'), deleteMessage)
 
 export default messagesRouter
