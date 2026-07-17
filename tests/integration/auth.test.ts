@@ -3,7 +3,7 @@ import { app } from '../helpers/testServer.js'
 import { prisma, resetDatabase, disconnectPrisma } from '../helpers/prismaTestClient.js'
 
 const testUser = {
-  username: 'testuser',
+  username: 'Test User',
   email: 'testuser@example.com',
   password: 'TestUser123#'
 }
