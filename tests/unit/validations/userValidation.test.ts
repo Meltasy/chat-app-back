@@ -18,7 +18,7 @@ describe('validateNewUser - username', () => {
   })
   it('rejects a username above the 100 character maximum', async () => {
     const result = await runValidation(validateNewUser, { 
-      ...validUser, username: 'Abraham Lincoln'.repeat(10)
+      ...validUser, username: 'Abraham Lincoln'.repeat(7)
     })
     expect(result.isEmpty()).toBe(false)
   })

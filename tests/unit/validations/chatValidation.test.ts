@@ -41,7 +41,7 @@ describe('validateNewChat - optional name', () => {
   it('rejects a name above the 100 character maximum, when provided', async () => {
     const result = await runValidation(validateNewChat, { 
       members: [randomUUID(), randomUUID()],
-      name: 'Super Radicals'.repeat(10)
+      name: 'Super Radicals'.repeat(8)
     })
     expect(result.isEmpty()).toBe(false)
   })
@@ -80,7 +80,7 @@ describe('validateMessage', () => {
     expect(result.isEmpty()).toBe(false)
   })
   it('rejects a message above the 250 character maximum', async () => {
-    const result = await runValidation(validateMessage, { text: 'Super Radicals'.repeat(20) })
+    const result = await runValidation(validateMessage, { text: 'Super Radicals'.repeat(18) })
     expect(result.isEmpty()).toBe(false)
   })
 })
